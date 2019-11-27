@@ -1,21 +1,18 @@
 import gdal
 import pdb
 # 读取要切的原图
-in_ds = gdal.Open("img.tif")
-print("open tif file succeed")
+in_ds = gdal.Open("GF2_PMS1_E113.5_N35.5_20170401_L1A0002277643-MSS1.tiff")
+# 波段数
+nb = in_ds.RasterCount
 
 # 读取原图中的每个波段
-in_band1 = in_ds.GetRasterBand(1)
-in_band2 = in_ds.GetRasterBand(2)
-in_band3 = in_ds.GetRasterBand(3)
-
-# 定义切图的起始点坐标(相比原点的横坐标和纵坐标偏移量)
-# offset_x = 0  # 这里是随便选取的，可根据自己的实际需要设置
-# offset_y = 0
+bands_list = []
+for i in range(1, nb + 1, 1):
+    bands_list.append(in_ds.GetRasterBand(i))
 
 # 定义切图的大小（矩形框）
-block_xsize = 1024  # 行
-block_ysize = 1024  # 列
+block_xsize = 512  # 行
+block_ysize = 512  # 列
 
 xpxs = in_ds.RasterXSize
 ypxs = in_ds.RasterYSize
@@ -39,11 +36,11 @@ for y in range(ycount):
             block_ysize_tmp = block_ysize
         # print('block_xsize_tmp: {},block_ysize_tmp: {}'.format(block_xsize_tmp, block_ysize_tmp))
         # print('xx: {},yy: {}'.format(offset_x+block_xsize_tmp, offset_y+block_ysize_tmp))
-        out_band1 = in_band1.ReadAsArray(offset_x, offset_y, block_xsize_tmp, block_ysize_tmp)
-        out_band2 = in_band2.ReadAsArray(offset_x, offset_y, block_xsize_tmp, block_ysize_tmp)
-        out_band3 = in_band3.ReadAsArray(offset_x, offset_y, block_xsize_tmp, block_ysize_tmp)
+        # out_band1 = in_band1.ReadAsArray(offset_x, offset_y, block_xsize_tmp, block_ysize_tmp)
+        # out_band2 = in_band2.ReadAsArray(offset_x, offset_y, block_xsize_tmp, block_ysize_tmp)
+        # out_band3 = in_band3.ReadAsArray(offset_x, offset_y, block_xsize_tmp, block_ysize_tmp)
         gtif_driver = gdal.GetDriverByName("GTiff")
-        out_ds = gtif_driver.Create('tiles/{}-{}.tif'.format(y, x), block_xsize_tmp, block_ysize_tmp, 3, in_band1.DataType)
+        out_ds = gtif_driver.Create('tiles/{}-{}.tif'.format(y, x), block_xsize_tmp, block_ysize_tmp, nb, bands_list[0].DataType)
         ori_transform = in_ds.GetGeoTransform()
         # 读取原图仿射变换参数值
         top_left_x = ori_transform[0]  # 左上角x坐标
@@ -65,9 +62,9 @@ for y in range(ycount):
         out_ds.SetProjection(in_ds.GetProjection())
 
         # 写入目标文件
-        out_ds.GetRasterBand(1).WriteArray(out_band1)
-        out_ds.GetRasterBand(2).WriteArray(out_band2)
-        out_ds.GetRasterBand(3).WriteArray(out_band3)
+        for i in range(1, nb + 1, 1):
+            out_band_i = bands_list[i-1].ReadAsArray(offset_x, offset_y, block_xsize_tmp, block_ysize_tmp)
+            out_ds.GetRasterBand(i).WriteArray(out_band_i)
 
         # 将缓存写入磁盘
         out_ds.FlushCache()
