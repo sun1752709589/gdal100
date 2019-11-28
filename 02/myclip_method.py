@@ -49,7 +49,6 @@ def tileclip(file_path, out_path, block_xsize, block_ysize):
             out_ds.SetProjection(in_ds.GetProjection())
             # 写入目标文件
             for i in range(1, nb + 1, 1):
-                pdb.set_trace()
                 out_band_i = bands_list[i-1].ReadAsArray(offset_x, offset_y, block_xsize_tmp, block_ysize_tmp)
                 m, n = out_band_i.shape
                 if m != block_ysize or n != block_xsize:
