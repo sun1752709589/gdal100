@@ -1,7 +1,7 @@
 import gdal
 import pdb
 
-def tileclip(file_path, block_xsize, block_ysize):
+def tileclip(file_path, out_path, block_xsize, block_ysize):
     # 读取要切的原图
     in_ds = gdal.Open(file_path)
     # 波段数
@@ -31,7 +31,7 @@ def tileclip(file_path, block_xsize, block_ysize):
                 block_ysize_tmp = block_ysize
             # 创建文件
             gtif_driver = gdal.GetDriverByName("GTiff")
-            out_ds = gtif_driver.Create('tiles/{}-{}.tif'.format(y, x), block_xsize_tmp, block_ysize_tmp, nb, bands_list[0].DataType)
+            out_ds = gtif_driver.Create(out_path + '{}-{}.tif'.format(y, x), block_xsize, block_ysize, nb, bands_list[0].DataType)
             ori_transform = in_ds.GetGeoTransform()
             # 读取原图仿射变换参数值
             top_left_x = ori_transform[0]  # 左上角x坐标
@@ -49,7 +49,11 @@ def tileclip(file_path, block_xsize, block_ysize):
             out_ds.SetProjection(in_ds.GetProjection())
             # 写入目标文件
             for i in range(1, nb + 1, 1):
+                pdb.set_trace()
                 out_band_i = bands_list[i-1].ReadAsArray(offset_x, offset_y, block_xsize_tmp, block_ysize_tmp)
+                m, n = out_band_i.shape
+                if m != block_ysize or n != block_xsize:
+                    out_band_i = np.pad(out_band_i,((0,block_ysize-m),(0,block_xsize-n)),'constant', constant_values = (0,0))
                 out_ds.GetRasterBand(i).WriteArray(out_band_i)
             # 将缓存写入磁盘
             out_ds.FlushCache()
@@ -58,4 +62,4 @@ def tileclip(file_path, block_xsize, block_ysize):
     del in_ds
 
 if __name__ == "__main__":
-    tileclip("GF2_PMS1_E113.5_N35.5_20170401_L1A0002277643-MSS1.tiff", 1024, 1024)
+    tileclip('GF2_PMS1_E113.5_N35.5_20170401_L1A0002277643-MSS1.tiff', 'tiles/', 1024, 1024)
