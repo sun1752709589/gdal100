@@ -1,7 +1,21 @@
-import gdal
+from osgeo import gdal
+from osgeo import ogr
 import pdb
 
-def tileclip(file_path, out_path, block_xsize, block_ysize):
+def get_polygon(origin_x, origin_y, offset_x, offset_y, w_e_pixel_resolution, n_s_pixel_resolution):
+    new_x = origin_x + offset_x * w_e_pixel_resolution
+    new_y = origin_y + offset_y * n_s_pixel_resolution
+    polygon = 'POLYGON (('
+    polygon += (str(origin_x) + ' ' + str(origin_y))
+    polygon += (',' + str(new_x) + ' ' + str(origin_y))
+    polygon += (',' + str(new_x) + ' ' + str(new_y))
+    polygon += (',' + str(origin_x) + ' ' + str(new_y))
+    polygon += (',' + str(origin_x) + ' ' + str(origin_y))
+    polygon += '))'
+    return polygon
+
+
+def tileclip(file_path, out_path, block_xsize, block_ysize, polygon):
     # 读取要切的原图
     in_ds = gdal.Open(file_path)
     # 波段数
@@ -29,11 +43,8 @@ def tileclip(file_path, out_path, block_xsize, block_ysize):
                 block_ysize_tmp = ypxs - offset_y
             else:
                 block_ysize_tmp = block_ysize
-            # 创建文件
-            gtif_driver = gdal.GetDriverByName("GTiff")
-            out_ds = gtif_driver.Create(out_path + '{}-{}.tif'.format(y, x), block_xsize, block_ysize, nb, bands_list[0].DataType)
-            ori_transform = in_ds.GetGeoTransform()
             # 读取原图仿射变换参数值
+            ori_transform = in_ds.GetGeoTransform()
             top_left_x = ori_transform[0]  # 左上角x坐标
             w_e_pixel_resolution = ori_transform[1] # 东西方向像素分辨率
             top_left_y = ori_transform[3] # 左上角y坐标
@@ -41,6 +52,17 @@ def tileclip(file_path, out_path, block_xsize, block_ysize):
             # 根据反射变换参数计算新图的原点坐标
             top_left_x = top_left_x + offset_x * w_e_pixel_resolution
             top_left_y = top_left_y + offset_y * n_s_pixel_resolution
+            # 判断是否相交
+            polygon_tmp = get_polygon(top_left_x, top_left_y, block_xsize, block_ysize, w_e_pixel_resolution, n_s_pixel_resolution)
+            poly1 = ogr.CreateGeometryFromWkt(polygon)
+            poly2 = ogr.CreateGeometryFromWkt(polygon_tmp)
+            intersection = poly1.Intersect(poly2)
+            # pdb.set_trace()
+            if not intersection:
+                continue
+            # 创建文件
+            gtif_driver = gdal.GetDriverByName("GTiff")
+            out_ds = gtif_driver.Create(out_path + '{}-{}.tif'.format(y, x), block_xsize, block_ysize, nb, bands_list[0].DataType)
             # 将计算后的值组装为一个元组，以方便设置
             dst_transform = (top_left_x, ori_transform[1], ori_transform[2], top_left_y, ori_transform[4], ori_transform[5])
             # 设置裁剪出来图的原点坐标
@@ -61,4 +83,5 @@ def tileclip(file_path, out_path, block_xsize, block_ysize):
     del in_ds
 
 if __name__ == "__main__":
-    tileclip('GF2_PMS1_E113.5_N35.5_20170401_L1A0002277643-MSS1.tiff', 'tiles/', 1024, 1024)
+    tileclip('GF2_PMS1_E113.5_N35.5_20170401_L1A0002277643-MSS1.tiff', 'tiles/', 1024, 1024, 'POLYGON ((113.509955 35.4629505,113.555715 35.4629505,113.555715 35.49956585,113.509955 35.49956585,113.509955 35.4629505))')
+    # tileclip('img.tif', 'tiles/', 1024, 1024, 'POLYGON ((113.509955 35.4629505,113.555715 35.4629505,113.555715 35.49956585,113.509955 35.49956585,113.509955 35.4629505))')
