@@ -1,6 +1,13 @@
 from osgeo import gdal
 from osgeo import ogr
+from osgeo import osr
 import pdb
+
+def imagexy2geo(dataset, offsey_y, offset_x):
+    trans = dataset.GetGeoTransform()
+    px = trans[0] + offset_x * trans[1] + offsey_y * trans[2]
+    py = trans[3] + offset_x * trans[4] + offsey_y * trans[5]
+    return px, py
 
 def get_polygon(origin_x, origin_y, offset_x, offset_y, w_e_pixel_resolution, n_s_pixel_resolution):
     new_x = origin_x + offset_x * w_e_pixel_resolution
@@ -19,7 +26,7 @@ def tileclip(file_path, out_path, block_xsize, block_ysize, polygon):
     # 读取要切的原图
     in_ds = gdal.Open(file_path)
     # 波段数
-    nb = in_ds.RasterCount
+    nb = in_ds.RasterCount - 3
     # 读取原图中的每个波段
     bands_list = []
     for i in range(1, nb + 1, 1):
@@ -50,8 +57,8 @@ def tileclip(file_path, out_path, block_xsize, block_ysize, polygon):
             top_left_y = ori_transform[3] # 左上角y坐标
             n_s_pixel_resolution = ori_transform[5] # 南北方向像素分辨率
             # 根据反射变换参数计算新图的原点坐标
-            top_left_x = top_left_x + offset_x * w_e_pixel_resolution
-            top_left_y = top_left_y + offset_y * n_s_pixel_resolution
+            top_left_x = top_left_x + offset_x * ori_transform[1] + offset_y * ori_transform[2]
+            top_left_y = top_left_y + offset_x * ori_transform[4] + offset_y * ori_transform[5]
             # 判断是否相交
             polygon_tmp = get_polygon(top_left_x, top_left_y, block_xsize, block_ysize, w_e_pixel_resolution, n_s_pixel_resolution)
             poly1 = ogr.CreateGeometryFromWkt(polygon)
