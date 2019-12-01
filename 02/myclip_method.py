@@ -1,6 +1,7 @@
 from osgeo import gdal
 from osgeo import ogr
 from osgeo import osr
+import numpy as np
 import pdb
 
 def imagexy2geo(dataset, offsey_y, offset_x):
@@ -8,6 +9,12 @@ def imagexy2geo(dataset, offsey_y, offset_x):
     px = trans[0] + offset_x * trans[1] + offsey_y * trans[2]
     py = trans[3] + offset_x * trans[4] + offsey_y * trans[5]
     return px, py
+
+def geo2imagexy(dataset, x, y):
+    trans = dataset.GetGeoTransform()
+    a = np.array([[trans[1], trans[2]], [trans[4], trans[5]]])
+    b = np.array([x - trans[0], y - trans[3]])
+    return np.linalg.solve(a, b)
 
 def get_polygon(origin_x, origin_y, offset_x, offset_y, w_e_pixel_resolution, n_s_pixel_resolution):
     new_x = origin_x + offset_x * w_e_pixel_resolution
