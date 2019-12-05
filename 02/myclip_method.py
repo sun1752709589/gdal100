@@ -4,21 +4,41 @@ from osgeo import osr
 import numpy as np
 import pdb
 
-def imagexy2geo(dataset, offsey_y, offset_x):
+def imagexy2geo(dataset, offset_x, offset_y):
+    '''
+    根据GDAL的六参数模型将影像图上坐标（行列号）转为投影坐标或地理坐标（根据具体数据的坐标系统转换）
+    :param dataset: GDAL地理数据
+    :param row: 像素的行号
+    :param col: 像素的列号
+    :return: 行列号(row, col)对应的投影坐标或地理坐标(x, y)
+    '''
     trans = dataset.GetGeoTransform()
-    px = trans[0] + offset_x * trans[1] + offsey_y * trans[2]
-    py = trans[3] + offset_x * trans[4] + offsey_y * trans[5]
+    px = trans[0] + offset_y * trans[1] + offset_x * trans[2]
+    py = trans[3] + offset_y * trans[4] + offset_x * trans[5]
     return px, py
 
 def geo2imagexy(dataset, x, y):
+    '''
+    根据GDAL的六 参数模型将给定的投影或地理坐标转为影像图上坐标（行列号）
+    :param dataset: GDAL地理数据
+    :param x: 投影或地理坐标x
+    :param y: 投影或地理坐标y
+    :return: 影坐标或地理坐标(x, y)对应的影像图上行列号(row, col)
+    '''
     trans = dataset.GetGeoTransform()
     a = np.array([[trans[1], trans[2]], [trans[4], trans[5]]])
     b = np.array([x - trans[0], y - trans[3]])
     return np.linalg.solve(a, b)
 
-def get_polygon(origin_x, origin_y, offset_x, offset_y, w_e_pixel_resolution, n_s_pixel_resolution):
-    new_x = origin_x + offset_x * w_e_pixel_resolution
-    new_y = origin_y + offset_y * n_s_pixel_resolution
+def get_tiff_polygon(dataset):
+    trans = dataset.GetGeoTransform()
+    xpxs = dataset.RasterXSize
+    ypxs = dataset.RasterYSize
+    return get_polygon(dataset, trans[0], trans[3], xpxs, ypxs)
+
+
+def get_polygon(dataset, origin_x, origin_y, offset_x, offset_y):
+    new_x, new_y = imagexy2geo(dataset, offset_x, offset_y)
     polygon = 'POLYGON (('
     polygon += (str(origin_x) + ' ' + str(origin_y))
     polygon += (',' + str(new_x) + ' ' + str(origin_y))
@@ -29,11 +49,13 @@ def get_polygon(origin_x, origin_y, offset_x, offset_y, w_e_pixel_resolution, n_
     return polygon
 
 
+# intersection.ExportToWkt()
+
 def tileclip(file_path, out_path, block_xsize, block_ysize, polygon):
     # 读取要切的原图
     in_ds = gdal.Open(file_path)
     # 波段数
-    nb = in_ds.RasterCount - 3
+    nb = in_ds.RasterCount
     # 读取原图中的每个波段
     bands_list = []
     for i in range(1, nb + 1, 1):
@@ -44,7 +66,7 @@ def tileclip(file_path, out_path, block_xsize, block_ysize, polygon):
     # 裁剪行列
     xcount = xpxs // block_xsize if xpxs % block_xsize == 0 else (xpxs // block_xsize) + 1
     ycount = ypxs // block_ysize if ypxs % block_ysize == 0 else (ypxs // block_ysize) + 1
-    # pdb.set_trace()
+    pdb.set_trace()
     for y in range(ycount):
         for x in range(xcount):
             offset_x = x * block_xsize
@@ -67,7 +89,7 @@ def tileclip(file_path, out_path, block_xsize, block_ysize, polygon):
             top_left_x = top_left_x + offset_x * ori_transform[1] + offset_y * ori_transform[2]
             top_left_y = top_left_y + offset_x * ori_transform[4] + offset_y * ori_transform[5]
             # 判断是否相交
-            polygon_tmp = get_polygon(top_left_x, top_left_y, block_xsize, block_ysize, w_e_pixel_resolution, n_s_pixel_resolution)
+            polygon_tmp = get_polygon(in_ds, top_left_x, top_left_y, block_xsize, block_ysize)
             poly1 = ogr.CreateGeometryFromWkt(polygon)
             poly2 = ogr.CreateGeometryFromWkt(polygon_tmp)
             intersection = poly1.Intersect(poly2)
