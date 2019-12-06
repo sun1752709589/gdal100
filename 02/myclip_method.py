@@ -55,6 +55,7 @@ def imagexy2geo(dataset, row, col):
     py = trans[3] + col * trans[4] + row * trans[5]
     return px, py
 
+
 def geo2imagexy(dataset, x, y):
     '''
     根据GDAL的六 参数模型将给定的投影或地理坐标转为影像图上坐标（行列号）
@@ -95,7 +96,7 @@ def get_tiff_polygon(dataset):
     return get_polygon(dataset, trans[0], trans[3], xpxs, ypxs)
 
 def get_polygon(dataset, origin_x, origin_y, offset_x, offset_y):
-    new_x, new_y = imagexy2geo(dataset, offset_x, offset_y)
+    new_x, new_y = imagexy2lonlat(dataset, offset_x, offset_y)
     polygon = 'POLYGON (('
     polygon += (str(origin_x) + ' ' + str(origin_y))
     polygon += (',' + str(new_x) + ' ' + str(origin_y))
