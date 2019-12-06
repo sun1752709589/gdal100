@@ -74,6 +74,7 @@ def imagexy2lonlat(dataset,row, col):
     影像行列转经纬度：
     ：通过影像行列转平面坐标
     ：平面坐标转经纬度
+    传入(row,col)
     '''
     coords = imagexy2geo(dataset, row, col)
     coords2 = geo2lonlat(dataset,coords[0], coords[1])
@@ -84,6 +85,7 @@ def lonlat2imagexy(dataset,x, y):
     影像行列转经纬度：
     ：通过经纬度转平面坐标
     ：平面坐标转影像行列
+    返回(x,y)
     '''
     coords = lonlat2geo(dataset, x, y)
     coords2 = geo2imagexy(dataset,coords[0], coords[1])
@@ -96,7 +98,7 @@ def get_tiff_polygon(dataset):
     return get_polygon(dataset, trans[0], trans[3], xpxs, ypxs)
 
 def get_polygon(dataset, origin_x, origin_y, offset_x, offset_y):
-    new_x, new_y = imagexy2lonlat(dataset, offset_x, offset_y)
+    new_x, new_y = imagexy2lonlat(dataset, offset_y, offset_x)
     polygon = 'POLYGON (('
     polygon += (str(origin_x) + ' ' + str(origin_y))
     polygon += (',' + str(new_x) + ' ' + str(origin_y))
