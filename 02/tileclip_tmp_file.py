@@ -131,17 +131,21 @@ def tileclip_tmp_file(file_path, out_path, polygon):
     pdb.set_trace()
     lonlat_arr = [i.split(' ') for i in intersection_polygon[10:-2].split(',')]
     lonlat_arr = [[float(i[0]),float(i[1])] for i in lonlat_arr]
-    imagexy0 = lonlat2imagexy(in_ds, lonlat_arr[1][0], lonlat_arr[1][1])
-    imagexy1 = lonlat2imagexy(in_ds, lonlat_arr[2][0], lonlat_arr[2][1])
-    imagexy2 = lonlat2imagexy(in_ds, lonlat_arr[3][0], lonlat_arr[3][1])
-    imagexy3 = lonlat2imagexy(in_ds, lonlat_arr[4][0], lonlat_arr[4][1])
-    imagexy4 = lonlat2imagexy(in_ds, lonlat_arr[0][0], lonlat_arr[0][1])
-    offset_x = abs(imagexy2[0] - imagexy0[0])
-    offset_y = abs(imagexy2[1] - imagexy0[1])
+    imagexy0 = lonlat2imagexy(in_ds, lonlat_arr[0][0], lonlat_arr[0][1])
+    imagexy1 = lonlat2imagexy(in_ds, lonlat_arr[1][0], lonlat_arr[1][1])
+    imagexy2 = lonlat2imagexy(in_ds, lonlat_arr[2][0], lonlat_arr[2][1])
+    imagexy3 = lonlat2imagexy(in_ds, lonlat_arr[3][0], lonlat_arr[3][1])
+    imagexy4 = lonlat2imagexy(in_ds, lonlat_arr[4][0], lonlat_arr[4][1])
+    x_list = [imagexy0[0], imagexy1[0], imagexy2[0], imagexy3[0], imagexy4[0]]
+    y_list = [imagexy0[1], imagexy1[1], imagexy2[1], imagexy3[1], imagexy4[1]]
+    imagexy_top_left = (min(x_list), min(y_list))
+    imagexy_bottom_right = (max(x_list), max(y_list))
+    offset_x = abs(imagexy_bottom_right[0] - imagexy_top_left[0])
+    offset_y = abs(imagexy_bottom_right[1] - imagexy_top_left[1])
     # 创建文件
     gtif_driver = gdal.GetDriverByName("GTiff")
     out_ds = gtif_driver.Create(out_path + 'tmp.tiff', offset_x, offset_y, nb, bands_list[0].DataType)
-    top_left_x, top_left_y = imagexy2lonlat(in_ds, imagexy0[1], imagexy0[0])
+    top_left_x, top_left_y = imagexy2lonlat(in_ds, imagexy_top_left[1], imagexy_top_left[0])
     # 将计算后的值组装为一个元组，以方便设置
     ori_transform = in_ds.GetGeoTransform()
     dst_transform = (top_left_x, ori_transform[1], ori_transform[2], top_left_y, ori_transform[4], ori_transform[5])
@@ -151,7 +155,7 @@ def tileclip_tmp_file(file_path, out_path, polygon):
     out_ds.SetProjection(in_ds.GetProjection())
     # 写入目标文件
     for i in range(1, nb + 1, 1):
-        out_band_i = bands_list[i-1].ReadAsArray(imagexy0[0], imagexy0[1], offset_x, offset_y)
+        out_band_i = bands_list[i-1].ReadAsArray(imagexy_top_left[0], imagexy_top_left[1], offset_x, offset_y)
         out_ds.GetRasterBand(i).WriteArray(out_band_i)
     # 将缓存写入磁盘
     out_ds.FlushCache()
