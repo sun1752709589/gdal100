@@ -128,7 +128,7 @@ def tileclip_tmp_file(file_path, out_path, polygon):
     poly2 = ogr.CreateGeometryFromWkt(polygon)
     intersection = poly1.Intersection(poly2)
     intersection_polygon = intersection.ExportToWkt()
-    pdb.set_trace()
+    # pdb.set_trace()
     lonlat_arr = [i.split(' ') for i in intersection_polygon[10:-2].split(',')]
     lonlat_arr = [[float(i[0]),float(i[1])] for i in lonlat_arr]
     imagexy0 = lonlat2imagexy(in_ds, lonlat_arr[0][0], lonlat_arr[0][1])
@@ -214,7 +214,7 @@ def tileclip(file_path, out_path, block_xsize, block_ysize):
             print("flush cache success: {}-{}".format(y, x))
             del out_ds
     del in_ds
-    os.remove(file_path)
+    # os.remove(file_path)
 
 if __name__ == "__main__":
     tileclip_tmp_file('GF2_PMS1_E113.5_N35.5_20170401_L1A0002277643-MSS1.tiff', 'tiles/', 'POLYGON ((113.509955 35.4629505,113.555715 35.4629505,113.555715 35.49956585,113.509955 35.49956585,113.509955 35.4629505))')
