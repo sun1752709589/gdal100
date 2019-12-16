@@ -217,6 +217,6 @@ def tileclip(file_path, out_path, block_xsize, block_ysize):
     # os.remove(file_path)
 
 if __name__ == "__main__":
-    tileclip_tmp_file('GF2_PMS1_E113.5_N35.5_20170401_L1A0002277643-MSS1.tiff', 'tiles/', 'POLYGON ((113.509955 35.4629505,113.555715 35.4629505,113.555715 35.49956585,113.509955 35.49956585,113.509955 35.4629505))')
-    tileclip('tiles/tmp.tiff', 'tiles/', 1024, 1024)
+    # tileclip_tmp_file('img.tif', 'tiles/', 'POLYGON ((113.509955 35.4629505,113.555715 35.4629505,113.555715 35.49956585,113.509955 35.49956585,113.509955 35.4629505))')
+    tileclip('img.tif', 'tiles/', 512, 512)
     # tileclip('img.tif', 'tiles/', 1024, 1024, 'POLYGON ((113.509955 35.4629505,113.555715 35.4629505,113.555715 35.49956585,113.509955 35.49956585,113.509955 35.4629505))')
